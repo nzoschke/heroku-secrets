@@ -1,6 +1,12 @@
 #!/bin/bash
 set -x
-PWD=$(pwd)
+PWD=/app
+
+# Delete everything but anvil build scripts
+cp /app/bin/stow /tmp
+rm -rf /app/*
+mkdir /app/bin
+mv /tmp/stow /app/bin
 
 mkdir -p $PWD/apt/{archives/partial,lists/partial}
 mkdir -p $PWD/vendor
