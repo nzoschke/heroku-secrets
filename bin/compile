@@ -1,0 +1,32 @@
+#!/bin/bash
+PROFILE_DIR=$1/.profile.d
+VENDOR_DIR=$1/vendor
+
+mkdir -p $PROFILE_DIR $VENDOR_DIR
+
+echo "Vendoring Heroku Client"
+curl -s http://assets.heroku.com.s3.amazonaws.com/heroku-client/heroku-client.tgz | tar xz -C $VENDOR_DIR
+echo "  Installed version " $(ruby -r$VENDOR_DIR/heroku-client/lib/heroku/version -e "puts Heroku::VERSION")
+
+if [ -f Gemfile ]; then
+  echo "Installing Ruby Dependencies"
+  (
+    export GEM_HOME=$VENDOR_DIR/bundler/ruby/1.9.1/gems/
+    export LANG=en_US.UTF-8
+    export PATH=$VENDOR_DIR/bundler/ruby/1.9.1/gems/bin:$PATH
+
+    gem install bundler --no-rdoc --no-ri
+    bundle install --path=$VENDOR_DIR/bundler --deployment
+    sed -i 's/BUNDLE_PATH:.*/BUNDLE_PATH: \/app\/vendor\/bundler/' $1/.bundle/config
+  ) | sed -u 's/^/  /'
+fi
+
+cat >$PROFILE_DIR/inline.sh <<'EOF'
+#!/bin/bash
+export GEM_HOME=/app/vendor/bundler/ruby/1.9.1/gems/
+export HOST=$(/sbin/ifconfig | sed -n 's/.*inet addr:\([0-9.]\+\)\s.*/\1/p' | head -1)
+export LANG=en_US.UTF-8
+export LD_LIBRARY_PATH=/app/vendor/usr/lib
+export PATH=/app/vendor/bundler/ruby/1.9.1/gems/bin:/app/vendor/heroku-client/bin:/app/vendor/bundler/ruby/1.9.1/bin:${PATH}
+export USER=$(whoami)
+EOF
