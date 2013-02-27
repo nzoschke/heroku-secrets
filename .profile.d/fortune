@@ -1,0 +1,6 @@
+#!/usr/bin/env ruby
+
+# TODO: use .dat files for indexed lookups
+contents = Dir["vendor/usr/share/games/fortunes/*.u8"].map { |f| File.open(f).read }
+fortunes = contents.map { |f| f.split("\n%\n") }
+puts fortunes.flatten.shuffle[0]
